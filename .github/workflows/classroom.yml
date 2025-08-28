@@ -1,0 +1,36 @@
+name: Classroom Autograding
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Windows-safe: ubah CRLF -> LF dan buat skrip tes bisa dieksekusi
+      - name: Prepare test script
+        run: |
+          if [ -f tests/run_tests.sh ]; then
+            sed -i 's/\r$//' tests/run_tests.sh
+            chmod +x tests/run_tests.sh
+          fi
+
+      # Kalau belum ada config Classroom, jalankan tes manual
+      - name: Run tests (no autograding.json)
+        if: ${{ hashFiles('.github/classroom/autograding.json') == '' }}
+        run: bash tests/run_tests.sh
+
+      # Jika ada config Classroom, gunakan autograder resmi (agar ada skor di Classroom)
+      - name: Autograding (GitHub Classroom)
+        if: ${{ hashFiles('.github/classroom/autograding.json') != '' }}
+        uses: education/autograding@v1
